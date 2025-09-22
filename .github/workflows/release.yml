@@ -39,3 +39,52 @@ jobs:
         with:
           name: ${{ matrix.target }}-binary
           path: target/${{ matrix.target }}/release/clipboard-sync*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Windows binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./x86_64-pc-windows-msvc-binary/clipboard-sync.exe
+          asset_name: clipboard-sync-${{ github.ref_name }}-windows.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS x86_64 binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./x86_64-apple-darwin-binary/clipboard-sync
+          asset_name: clipboard-sync-${{ github.ref_name }}-macos-x86_64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS arm64 binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./aarch64-apple-darwin-binary/clipboard-sync
+          asset_name: clipboard-sync-${{ github.ref_name }}-macos-arm64
+          asset_content_type: application/octet-stream
